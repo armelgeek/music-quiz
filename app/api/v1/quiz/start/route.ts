@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-// For demo purposes, we'll skip auth requirements
 import { startQuizUseCase } from '@/features/quiz/domain/use-cases/start-quiz.use-case';
 import { quizSessionSchema } from '@/features/quiz/config/quiz.schema';
+import { auth } from '@/auth';
+import { headers } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
     // For demo, we'll use a mock user ID
-    const mockUserId = 'demo-user-' + Date.now();
-
+   const session = await auth.api.getSession({ headers: await headers() });
+   
     const body = await request.json();
     const validatedData = quizSessionSchema.parse(body);
 
     const result = await startQuizUseCase({
-      userId: mockUserId,
+      userId: session?.user.id || 'anonymous',
       categoryId: validatedData.categoryId,
       totalQuestions: validatedData.totalQuestions,
     });

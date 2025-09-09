@@ -20,10 +20,58 @@ function QuizPlayContent() {
       return;
     }
 
-    // In a real implementation, you'd fetch the quiz session data
-    // For now, we'll simulate having the data
+    // For demo purposes since we don't have a session fetch endpoint yet,
+    // we'll use sample questions. In a real app, you'd fetch the session data
+    // and questions from the API based on the sessionId
+    setQuizData({
+      sessionId,
+      questions: sampleQuestions,
+      categoryName: 'Music Knowledge',
+    });
     setIsLoading(false);
   }, [sessionId, router]);
+
+  // Sample questions for demo
+  const sampleQuestions = [
+    {
+      id: '1',
+      type: 'multiple_choice' as const,
+      question: 'Which artist released the album "Thriller" in 1982?',
+      options: ['Michael Jackson', 'Prince', 'Madonna', 'Whitney Houston'],
+      timeLimit: 30,
+      points: 10,
+    },
+    {
+      id: '2',
+      type: 'true_false' as const,
+      question: 'The Beatles were formed in Liverpool, England.',
+      timeLimit: 20,
+      points: 10,
+    },
+    {
+      id: '3',
+      type: 'multiple_choice' as const,
+      question: 'What year was "Bohemian Rhapsody" by Queen released?',
+      options: ['1975', '1976', '1977', '1978'],
+      timeLimit: 30,
+      points: 10,
+    },
+    {
+      id: '4',
+      type: 'multiple_choice' as const,
+      question: 'Which instrument is Jimi Hendrix most famous for playing?',
+      options: ['Piano', 'Guitar', 'Drums', 'Bass'],
+      timeLimit: 25,
+      points: 10,
+    },
+    {
+      id: '5',
+      type: 'true_false' as const,
+      question: 'Jay-Z and Beyoncé are married.',
+      timeLimit: 20,
+      points: 10,
+    },
+  ];
 
   const handleAnswerSubmit = async (
     sessionId: string,
@@ -157,11 +205,11 @@ function QuizPlayContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
       <div className="container mx-auto px-4">
-        {sessionId && (
+        {quizData && (
           <QuizGame
-            sessionId={sessionId}
-            questions={sampleQuestions}
-            categoryName="Music Knowledge"
+            sessionId={quizData.sessionId}
+            questions={quizData.questions}
+            categoryName={quizData.categoryName}
             onAnswerSubmit={handleAnswerSubmit}
             onQuizComplete={handleQuizComplete}
             onPlayAgain={handlePlayAgain}

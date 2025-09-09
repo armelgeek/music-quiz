@@ -22,22 +22,25 @@ export class QuizService {
 
   // Get random questions for a quiz session
   async getQuizQuestions(categoryId?: string, limit: number = 10) {
-    const query = db
-      .select()
-      .from(quizQuestions)
-      .where(eq(quizQuestions.isActive, true))
-      .limit(limit);
-
+    let whereClause = eq(quizQuestions.isActive, true);
+    
     if (categoryId) {
-      query.where(and(
+      whereClause = and(
         eq(quizQuestions.isActive, true),
         eq(quizQuestions.categoryId, categoryId)
-      ));
+      ) as any;
     }
 
-    // Note: For true randomization, we would need to use SQL's RANDOM() function
-    // This is a simplified version - in production you'd want better randomization
-    return await query;
+    // Get all available questions first, then randomize in JavaScript
+    // In production, you'd want to use SQL RANDOM() for better performance
+    const allQuestions = await db
+      .select()
+      .from(quizQuestions)
+      .where(whereClause);
+
+    // Shuffle and limit
+    const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, limit);
   }
 
   // Create a new quiz session

@@ -1,9 +1,9 @@
 import { Icons } from "@/components/ui/icons";
 
-const kAppName = "Boiler";
-const kAppAbbr = "B";
-const kAppTagline = "Empowering developers one snippet at a time";
-const kAppDescription = `boiler app description`;
+const kAppName = "Music Quiz";
+const kAppAbbr = "MQ";
+const kAppTagline = "Test your music knowledge and discover new tunes";
+const kAppDescription = `Interactive music quiz application where you can test your knowledge of songs, artists, and music trivia across different genres and eras.`;
 
 export interface NavItem {
   title: string;
@@ -47,6 +47,13 @@ export const navItems: NavItem[] = [
     icon: 'dashboard',
     isActive: false,
     shortcut: ['d', 'd'],
+    items: []
+  },
+  {
+    title: 'Quiz Admin',
+    url: '/d/quiz',
+    icon: 'dashboard',
+    isActive: false,
     items: []
   }
 ];

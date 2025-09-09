@@ -89,17 +89,35 @@ export default function QuizPage() {
         </div>
 
         {/* Quick Start */}
-        <div className="bg-white rounded-lg p-6 shadow-lg mb-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Start</h2>
-            <p className="text-gray-600 mb-6">Jump right in with a random mix of questions</p>
-            <button
-              onClick={() => startQuiz()}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all transform hover:scale-105"
-            >
-              <Play size={24} />
-              Start Random Quiz
-            </button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Solo Quiz */}
+          <div className="bg-white rounded-lg p-6 shadow-lg">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Solo Challenge</h2>
+              <p className="text-gray-600 mb-6">Test your knowledge at your own pace</p>
+              <button
+                onClick={() => startQuiz()}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all transform hover:scale-105"
+              >
+                <Play size={24} />
+                Start Solo Quiz
+              </button>
+            </div>
+          </div>
+
+          {/* Join Hosted Session */}
+          <div className="bg-white rounded-lg p-6 shadow-lg">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Join Live Session</h2>
+              <p className="text-gray-600 mb-6">Play with friends in a hosted quiz game</p>
+              <button
+                onClick={() => router.push('/quiz/join')}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105"
+              >
+                <Users size={24} />
+                Join Session
+              </button>
+            </div>
           </div>
         </div>
 

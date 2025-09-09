@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash, Music } from 'lucide-react';
 import { UploadButton } from '@/shared/lib/utils/uploadthing';
+import { toast } from 'sonner';
 
 interface QuizQuestion {
   id: string;
@@ -72,7 +73,7 @@ export default function AdminQuizPage() {
     
     // Validate required fields
     if (!newQuestion.question || !newQuestion.correctAnswer) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -99,7 +100,7 @@ export default function AdminQuizPage() {
           q.id === editingQuestion.id ? updatedQuestion : q
         ));
         
-        alert('Question updated successfully!');
+        toast.success('Question updated successfully!');
       } else {
         // Create new question
         const response = await fetch('/api/v1/quiz/questions', {
@@ -120,7 +121,7 @@ export default function AdminQuizPage() {
         // Add to local state for immediate UI update
         setQuestions(prev => [...prev, createdQuestion]);
         
-        alert('Question added successfully!');
+        toast.success('Question added successfully!');
       }
       
       // Reset form
@@ -137,7 +138,7 @@ export default function AdminQuizPage() {
     } catch (error) {
       console.error('Error saving question:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to save question: ${errorMessage}`);
+      toast.error(`Failed to save question: ${errorMessage}`);
     }
   };
 
@@ -175,7 +176,7 @@ export default function AdminQuizPage() {
 
       // Remove from local state
       setQuestions(prev => prev.filter(q => q.id !== questionId));
-      alert('Question deleted successfully!');
+      toast.success('Question deleted successfully!');
     } catch (error) {
       console.error('Error deleting question:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

@@ -51,8 +51,12 @@ export default function AdminQuizPage() {
         setCategories(categoriesData);
       }
 
-      // For now, we don't have a questions API endpoint, so we'll show empty state
-      setQuestions([]);
+      // Fetch questions
+      const questionsResponse = await fetch('/api/v1/quiz/questions');
+      if (questionsResponse.ok) {
+        const questionsData = await questionsResponse.json();
+        setQuestions(questionsData);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -70,16 +74,26 @@ export default function AdminQuizPage() {
     }
 
     try {
-      // Here you would call your API to create the question
-      console.log('Creating question:', newQuestion);
+      // Call API to create the question
+      const response = await fetch('/api/v1/quiz/questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newQuestion),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create question');
+      }
+
+      const createdQuestion = await response.json();
       
-      // For demo purposes, just add to local state
-      const questionToAdd = {
-        ...newQuestion,
-        id: Date.now().toString(),
-      } as QuizQuestion;
+      // Add to local state for immediate UI update
+      setQuestions(prev => [...prev, createdQuestion]);
       
-      setQuestions(prev => [...prev, questionToAdd]);
+      // Reset form
       setNewQuestion({
         type: 'multiple_choice',
         difficulty: 'medium',
@@ -90,10 +104,10 @@ export default function AdminQuizPage() {
       });
       setShowAddForm(false);
       
-      alert('Question added successfully! (Demo mode)');
+      alert('Question added successfully!');
     } catch (error) {
       console.error('Error creating question:', error);
-      alert('Failed to create question');
+      alert(`Failed to create question: ${error.message}`);
     }
   };
 
@@ -168,7 +182,7 @@ export default function AdminQuizPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
                 <select
                   value={newQuestion.type}
-                  onChange={(e) => setNewQuestion({...newQuestion, type: e.target.value as any})}
+                  onChange={(e) => setNewQuestion({...newQuestion, type: e.target.value as QuizQuestion['type']})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="multiple_choice">Multiple Choice</option>
@@ -251,7 +265,7 @@ export default function AdminQuizPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
                 <select
                   value={newQuestion.difficulty}
-                  onChange={(e) => setNewQuestion({...newQuestion, difficulty: e.target.value as any})}
+                  onChange={(e) => setNewQuestion({...newQuestion, difficulty: e.target.value as QuizQuestion['difficulty']})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="easy">Easy</option>

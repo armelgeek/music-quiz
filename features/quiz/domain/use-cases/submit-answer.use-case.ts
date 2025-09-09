@@ -43,7 +43,7 @@ export async function submitAnswerUseCase({
       isCorrect: result.isCorrect,
       correctAnswer: result.correctAnswer,
       pointsEarned: result.pointsEarned,
-      explanation: result.explanation,
+      explanation: result.explanation || undefined,
       artistInfo: result.artistInfo,
       feedback,
     };

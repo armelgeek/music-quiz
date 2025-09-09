@@ -136,7 +136,8 @@ export default function AdminQuizPage() {
       setShowAddForm(false);
     } catch (error) {
       console.error('Error saving question:', error);
-      alert(`Failed to save question: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to save question: ${errorMessage}`);
     }
   };
 
@@ -177,7 +178,8 @@ export default function AdminQuizPage() {
       alert('Question deleted successfully!');
     } catch (error) {
       console.error('Error deleting question:', error);
-      alert(`Failed to delete question: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to delete question: ${errorMessage}`);
     }
   };
 

@@ -9,6 +9,7 @@ interface QuizQuestionProps {
   question: string;
   options?: string[];
   audioUrl?: string;
+  timeLimit?: number;
   onAnswer: (answer: string) => void;
   isAnswered?: boolean;
   correctAnswer?: string;
@@ -22,6 +23,7 @@ export const QuizQuestion: React.FC<QuizQuestionProps> = ({
   question,
   options = [],
   audioUrl,
+  timeLimit,
   onAnswer,
   isAnswered = false,
   correctAnswer,
@@ -75,7 +77,13 @@ export const QuizQuestion: React.FC<QuizQuestionProps> = ({
       
       {type === 'audio_recognition' && audioUrl && (
         <div className="mb-6">
-          <AudioPlayer audioUrl={audioUrl} />
+          <AudioPlayer 
+            audioUrl={audioUrl} 
+            autoPlay={true}
+            maxPlayTime={timeLimit}
+            onAutoPlayStart={() => console.log('Audio auto-play started')}
+            onAutoPlayEnd={() => console.log('Audio auto-play ended')}
+          />
         </div>
       )}
       

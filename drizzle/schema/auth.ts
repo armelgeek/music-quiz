@@ -1,5 +1,8 @@
 import { sql } from 'drizzle-orm';
-import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+
+// Enum for user roles
+export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'host']);
 
 export const users = pgTable('users', {
   id: text('id')
@@ -9,6 +12,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull(),
   image: text('image'),
+  role: userRoleEnum('role').notNull().default('user'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
   stripeCustomerId: text('stripe_customer_id')

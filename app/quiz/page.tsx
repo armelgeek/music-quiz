@@ -13,7 +13,6 @@ interface QuizCategory {
 
 export default function QuizPage() {
   const [categories, setCategories] = useState<QuizCategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 

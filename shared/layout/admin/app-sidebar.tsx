@@ -45,8 +45,17 @@ import { Icons } from '@/components/ui/icons';
 import { authClient } from '@/auth-client';
 import { Session } from 'better-auth';
 
+type AuthSession = {
+  session: Session;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string | null;
+  };
+} | null;
 
-export default function AppSidebar({ session }: { session: Session }) {
+export default function AppSidebar({ session }: { session: AuthSession }) {
   const router = useRouter();
   const pathname = usePathname();
   //const { state, isMobile } = useSidebar();

@@ -166,6 +166,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({
         question={currentQuestion.question}
         options={currentQuestion.options}
         audioUrl={currentQuestion.audioUrl}
+        timeLimit={currentQuestion.timeLimit}
         onAnswer={handleAnswer}
         isAnswered={isAnswered}
         correctAnswer={feedbackData?.correctAnswer}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash, Music } from 'lucide-react';
 import { UploadButton } from '@/shared/lib/utils/uploadthing';
+import { toast } from 'sonner';
 
 interface QuizQuestion {
   id: string;
@@ -28,10 +29,15 @@ interface QuizCategory {
 
 export default function AdminQuizPage() {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<QuizQuestion[]>([]);
   const [categories, setCategories] = useState<QuizCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState('');
+  const [filterType, setFilterType] = useState('');
   const [newQuestion, setNewQuestion] = useState<Partial<QuizQuestion>>({
     type: 'multiple_choice',
     difficulty: 'medium',
@@ -44,6 +50,32 @@ export default function AdminQuizPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Filter questions based on search and filters
+  useEffect(() => {
+    let filtered = questions;
+
+    if (searchTerm) {
+      filtered = filtered.filter(q => 
+        q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        q.correctAnswer.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (filterCategory) {
+      filtered = filtered.filter(q => q.categoryId === filterCategory);
+    }
+
+    if (filterDifficulty) {
+      filtered = filtered.filter(q => q.difficulty === filterDifficulty);
+    }
+
+    if (filterType) {
+      filtered = filtered.filter(q => q.type === filterType);
+    }
+
+    setFilteredQuestions(filtered);
+  }, [questions, searchTerm, filterCategory, filterDifficulty, filterType]);
 
   const fetchData = async () => {
     try {
@@ -72,7 +104,7 @@ export default function AdminQuizPage() {
     
     // Validate required fields
     if (!newQuestion.question || !newQuestion.correctAnswer) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -99,7 +131,7 @@ export default function AdminQuizPage() {
           q.id === editingQuestion.id ? updatedQuestion : q
         ));
         
-        alert('Question updated successfully!');
+        toast.success('Question updated successfully!');
       } else {
         // Create new question
         const response = await fetch('/api/v1/quiz/questions', {
@@ -120,7 +152,7 @@ export default function AdminQuizPage() {
         // Add to local state for immediate UI update
         setQuestions(prev => [...prev, createdQuestion]);
         
-        alert('Question added successfully!');
+        toast.success('Question added successfully!');
       }
       
       // Reset form
@@ -136,7 +168,8 @@ export default function AdminQuizPage() {
       setShowAddForm(false);
     } catch (error) {
       console.error('Error saving question:', error);
-      alert(`Failed to save question: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to save question: ${errorMessage}`);
     }
   };
 
@@ -174,10 +207,11 @@ export default function AdminQuizPage() {
 
       // Remove from local state
       setQuestions(prev => prev.filter(q => q.id !== questionId));
-      alert('Question deleted successfully!');
+      toast.success('Question deleted successfully!');
     } catch (error) {
       console.error('Error deleting question:', error);
-      alert(`Failed to delete question: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to delete question: ${errorMessage}`);
     }
   };
 
@@ -252,6 +286,84 @@ export default function AdminQuizPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border mb-8">
+        <h2 className="text-lg font-semibold mb-4">Search & Filters</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search questions or answers..."
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+            <select
+              value={filterDifficulty}
+              onChange={(e) => setFilterDifficulty(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Difficulties</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Types</option>
+              <option value="multiple_choice">Multiple Choice</option>
+              <option value="true_false">True/False</option>
+              <option value="audio_recognition">Audio Recognition</option>
+            </select>
+          </div>
+        </div>
+        
+        {(searchTerm || filterCategory || filterDifficulty || filterType) && (
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              Showing {filteredQuestions.length} of {questions.length} questions
+            </span>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterCategory('');
+                setFilterDifficulty('');
+                setFilterType('');
+              }}
+              className="text-sm text-blue-500 hover:text-blue-600 underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Question Form */}
@@ -445,18 +557,25 @@ export default function AdminQuizPage() {
       {/* Questions List */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">Questions ({questions.length})</h2>
+          <h2 className="text-xl font-bold">Questions ({filteredQuestions.length})</h2>
         </div>
         
-        {questions.length === 0 ? (
+        {filteredQuestions.length === 0 ? (
           <div className="p-8 text-center text-gray-600">
             <Music className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-lg">No questions yet</p>
-            <p className="text-sm">Add your first quiz question to get started.</p>
+            <p className="text-lg">
+              {questions.length === 0 ? 'No questions yet' : 'No questions match your filters'}
+            </p>
+            <p className="text-sm">
+              {questions.length === 0 
+                ? 'Add your first quiz question to get started.' 
+                : 'Try adjusting your search or filter criteria.'
+              }
+            </p>
           </div>
         ) : (
           <div className="divide-y">
-            {questions.map((question) => (
+            {filteredQuestions.map((question) => (
               <div key={question.id} className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

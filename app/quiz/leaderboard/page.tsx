@@ -26,7 +26,7 @@ export default function LeaderboardPage() {
       const response = await fetch('/api/v1/quiz/leaderboard');
       if (response.ok) {
         const data = await response.json();
-        const processedData = data.map((entry: any, index: number) => ({
+        const processedData = data.map((entry: { id: string; userName: string; score: number; accuracy: number; timeSpent: number; createdAt: string }, index: number) => ({
           ...entry,
           rank: index + 1,
         }));

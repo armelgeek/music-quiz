@@ -32,45 +32,66 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     return 'text-red-600';
   };
 
+  const getPerformanceMessage = () => {
+    if (accuracy >= 90) return '🎉 Outstanding performance!';
+    if (accuracy >= 80) return '🎵 Great job!';
+    if (accuracy >= 70) return '👍 Well done!';
+    if (accuracy >= 60) return '📈 Good effort!';
+    if (accuracy >= 50) return '💪 Keep practicing!';
+    return '🎯 Room for improvement!';
+  };
+
+  const avgTimePerQuestion = totalQuestions > 0 ? Math.round(timeSpent / totalQuestions) : 0;
+
   return (
-    <div className={`bg-white rounded-lg p-8 shadow-lg border text-center max-w-md mx-auto ${className}`}>
+    <div className={`bg-white rounded-lg p-8 shadow-lg border text-center max-w-lg mx-auto ${className}`}>
       <div className="mb-6">
         <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
-        <p className="text-gray-600">{feedback}</p>
+        <p className="text-gray-600">{getPerformanceMessage()}</p>
+        <p className="text-sm text-gray-500 mt-1">{feedback}</p>
       </div>
 
       <div className="space-y-4 mb-8">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className={`text-4xl font-bold mb-2 ${getScoreColor()}`}>
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+          <div className={`text-5xl font-bold mb-2 ${getScoreColor()}`}>
             {totalScore}
           </div>
           <div className="text-sm text-gray-600">Total Score</div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-2xl font-bold text-gray-800">{correctAnswers}</div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-green-600">{correctAnswers}</div>
             <div className="text-xs text-gray-600">Correct</div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-2xl font-bold text-gray-800">{accuracy}%</div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-red-600">{totalQuestions - correctAnswers}</div>
+            <div className="text-xs text-gray-600">Wrong</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-blue-600">{accuracy}%</div>
             <div className="text-xs text-gray-600">Accuracy</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-lg p-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 rounded-lg p-4">
             <div className="text-lg font-bold text-gray-800">{formatTime(timeSpent)}</div>
-            <div className="text-xs text-gray-600">Time</div>
+            <div className="text-xs text-gray-600">Total Time</div>
           </div>
-          {rank && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-lg font-bold text-gray-800">#{rank}</div>
-              <div className="text-xs text-gray-600">Rank</div>
-            </div>
-          )}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-lg font-bold text-gray-800">{avgTimePerQuestion}s</div>
+            <div className="text-xs text-gray-600">Avg/Question</div>
+          </div>
         </div>
+
+        {rank && (
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-orange-600">#{rank}</div>
+            <div className="text-sm text-gray-600">Your Rank</div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">

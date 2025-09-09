@@ -5,8 +5,23 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { QuizGame } from '@/features/quiz/components/organisms/quiz-game';
 import { QuizResult } from '@/features/quiz/config/quiz.types';
 
+interface QuizData {
+  sessionId: string;
+  questions: Array<{
+    id: string;
+    type: string;
+    question: string;
+    options?: string[];
+    correctAnswer?: string; // Made optional since we might not always have it in play mode
+    timeLimit: number;
+    points: number;
+    audioUrl?: string;
+  }>;
+  categoryName?: string;
+}
+
 function QuizPlayContent() {
-  const [quizData, setQuizData] = useState<any>(null);
+  const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const searchParams = useSearchParams();
@@ -36,6 +51,13 @@ function QuizPlayContent() {
       }
     } catch (error) {
       console.error('Error parsing quiz data:', error);
+      // Set error if there's no fallback data
+      if (!sessionId) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load quiz data';
+        setError(errorMessage);
+        setIsLoading(false);
+        return;
+      }
       // Fallback to sample questions
       setQuizData({
         sessionId,

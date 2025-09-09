@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { QuizService } from '@/features/quiz/domain/service';
+import { auth } from '@/auth';
+import { headers } from 'next/headers';
 
 const quizService = new QuizService();
 
@@ -22,6 +24,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication for creating questions
+    const session = await auth.api.getSession({ headers: await headers() });
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required to create questions' },
+        { status: 401 }
+      );
+    }
+
     const questionData = await request.json();
     
     // Validate required fields
@@ -45,6 +57,16 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Check authentication for updating questions
+    const session = await auth.api.getSession({ headers: await headers() });
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required to update questions' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const questionId = searchParams.get('id');
     
@@ -77,6 +99,16 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Check authentication for deleting questions
+    const session = await auth.api.getSession({ headers: await headers() });
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required to delete questions' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const questionId = searchParams.get('id');
     

@@ -29,6 +29,7 @@ export default function AdminQuizPage() {
   const [categories, setCategories] = useState<QuizCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(null);
   const [newQuestion, setNewQuestion] = useState<Partial<QuizQuestion>>({
     type: 'multiple_choice',
     difficulty: 'medium',
@@ -51,8 +52,12 @@ export default function AdminQuizPage() {
         setCategories(categoriesData);
       }
 
-      // For now, we don't have a questions API endpoint, so we'll show empty state
-      setQuestions([]);
+      // Fetch questions
+      const questionsResponse = await fetch('/api/v1/quiz/questions');
+      if (questionsResponse.ok) {
+        const questionsData = await questionsResponse.json();
+        setQuestions(questionsData);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -70,16 +75,53 @@ export default function AdminQuizPage() {
     }
 
     try {
-      // Here you would call your API to create the question
-      console.log('Creating question:', newQuestion);
+      if (editingQuestion) {
+        // Update existing question
+        const response = await fetch(`/api/v1/quiz/questions?id=${editingQuestion.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newQuestion),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update question');
+        }
+
+        const updatedQuestion = await response.json();
+        
+        // Update local state
+        setQuestions(prev => prev.map(q => 
+          q.id === editingQuestion.id ? updatedQuestion : q
+        ));
+        
+        alert('Question updated successfully!');
+      } else {
+        // Create new question
+        const response = await fetch('/api/v1/quiz/questions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newQuestion),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create question');
+        }
+
+        const createdQuestion = await response.json();
+        
+        // Add to local state for immediate UI update
+        setQuestions(prev => [...prev, createdQuestion]);
+        
+        alert('Question added successfully!');
+      }
       
-      // For demo purposes, just add to local state
-      const questionToAdd = {
-        ...newQuestion,
-        id: Date.now().toString(),
-      } as QuizQuestion;
-      
-      setQuestions(prev => [...prev, questionToAdd]);
+      // Reset form
       setNewQuestion({
         type: 'multiple_choice',
         difficulty: 'medium',
@@ -88,13 +130,66 @@ export default function AdminQuizPage() {
         isActive: true,
         options: ['', '', '', ''],
       });
+      setEditingQuestion(null);
       setShowAddForm(false);
-      
-      alert('Question added successfully! (Demo mode)');
     } catch (error) {
-      console.error('Error creating question:', error);
-      alert('Failed to create question');
+      console.error('Error saving question:', error);
+      alert(`Failed to save question: ${error.message}`);
     }
+  };
+
+  const handleEditQuestion = (question: QuizQuestion) => {
+    setEditingQuestion(question);
+    setNewQuestion({
+      type: question.type,
+      categoryId: question.categoryId,
+      question: question.question,
+      options: question.options || ['', '', '', ''],
+      correctAnswer: question.correctAnswer,
+      explanation: question.explanation,
+      difficulty: question.difficulty,
+      points: question.points,
+      timeLimit: question.timeLimit,
+      isActive: question.isActive,
+    });
+    setShowAddForm(true);
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm('Are you sure you want to delete this question?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/quiz/questions?id=${questionId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete question');
+      }
+
+      // Remove from local state
+      setQuestions(prev => prev.filter(q => q.id !== questionId));
+      alert('Question deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      alert(`Failed to delete question: ${error.message}`);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingQuestion(null);
+    setNewQuestion({
+      type: 'multiple_choice',
+      difficulty: 'medium',
+      points: 10,
+      timeLimit: 30,
+      isActive: true,
+      options: ['', '', '', ''],
+    });
+    setShowAddForm(false);
   };
 
   if (isLoading) {
@@ -157,10 +252,12 @@ export default function AdminQuizPage() {
         </div>
       </div>
 
-      {/* Add Question Form */}
+      {/* Add/Edit Question Form */}
       {showAddForm && (
         <div className="bg-white rounded-lg p-6 shadow-sm border mb-8">
-          <h2 className="text-xl font-bold mb-4">Add New Question</h2>
+          <h2 className="text-xl font-bold mb-4">
+            {editingQuestion ? 'Edit Question' : 'Add New Question'}
+          </h2>
           
           <form onSubmit={handleSubmitQuestion} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,7 +265,7 @@ export default function AdminQuizPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
                 <select
                   value={newQuestion.type}
-                  onChange={(e) => setNewQuestion({...newQuestion, type: e.target.value as any})}
+                  onChange={(e) => setNewQuestion({...newQuestion, type: e.target.value as QuizQuestion['type']})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="multiple_choice">Multiple Choice</option>
@@ -251,7 +348,7 @@ export default function AdminQuizPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
                 <select
                   value={newQuestion.difficulty}
-                  onChange={(e) => setNewQuestion({...newQuestion, difficulty: e.target.value as any})}
+                  onChange={(e) => setNewQuestion({...newQuestion, difficulty: e.target.value as QuizQuestion['difficulty']})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="easy">Easy</option>
@@ -290,11 +387,11 @@ export default function AdminQuizPage() {
                 type="submit"
                 className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors"
               >
-                Add Question
+                {editingQuestion ? 'Update Question' : 'Add Question'}
               </button>
               <button
                 type="button"
-                onClick={() => setShowAddForm(false)}
+                onClick={handleCancelEdit}
                 className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition-colors"
               >
                 Cancel
@@ -345,10 +442,16 @@ export default function AdminQuizPage() {
                     <p className="text-sm text-gray-600">Correct Answer: {question.correctAnswer}</p>
                   </div>
                   <div className="flex gap-2 ml-4">
-                    <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
+                    <button 
+                      onClick={() => handleEditQuestion(question)}
+                      className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+                    >
                       <Edit size={16} />
                     </button>
-                    <button className="p-2 text-gray-600 hover:text-red-600 transition-colors">
+                    <button 
+                      onClick={() => handleDeleteQuestion(question.id)}
+                      className="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                    >
                       <Trash size={16} />
                     </button>
                   </div>

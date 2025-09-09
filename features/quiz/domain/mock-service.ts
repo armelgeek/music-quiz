@@ -166,6 +166,69 @@ export class MockQuizService {
     return mockCategories.filter(c => c.isActive);
   }
 
+  // Get all questions for admin (not random/limited)
+  async getAllQuestions(categoryId?: string) {
+    let questions = mockQuestions.filter(q => q.isActive);
+    
+    if (categoryId) {
+      questions = questions.filter(q => q.categoryId === categoryId);
+    }
+
+    return questions;
+  }
+
+  // Create a new question
+  async createQuestion(questionData: Partial<MockQuestion>) {
+    const newQuestion: MockQuestion = {
+      id: `question_${Date.now()}`,
+      categoryId: questionData.categoryId,
+      type: questionData.type || 'multiple_choice',
+      difficulty: questionData.difficulty || 'medium',
+      question: questionData.question || '',
+      options: questionData.options,
+      correctAnswer: questionData.correctAnswer || '',
+      explanation: questionData.explanation,
+      points: questionData.points || 10,
+      timeLimit: questionData.timeLimit || 30,
+      artistInfo: questionData.artistInfo,
+      isActive: questionData.isActive !== undefined ? questionData.isActive : true,
+    };
+
+    mockQuestions.push(newQuestion);
+    return newQuestion;
+  }
+
+  // Update an existing question
+  async updateQuestion(questionId: string, updateData: Partial<MockQuestion>) {
+    const questionIndex = mockQuestions.findIndex(q => q.id === questionId);
+    
+    if (questionIndex === -1) {
+      return null;
+    }
+
+    const existingQuestion = mockQuestions[questionIndex];
+    const updatedQuestion: MockQuestion = {
+      ...existingQuestion,
+      ...updateData,
+      id: questionId, // Ensure ID doesn't change
+    };
+
+    mockQuestions[questionIndex] = updatedQuestion;
+    return updatedQuestion;
+  }
+
+  // Delete a question
+  async deleteQuestion(questionId: string) {
+    const questionIndex = mockQuestions.findIndex(q => q.id === questionId);
+    
+    if (questionIndex === -1) {
+      return false;
+    }
+
+    mockQuestions.splice(questionIndex, 1);
+    return true;
+  }
+
   // Get random questions for a quiz session
   async getQuizQuestions(categoryId?: string, limit: number = 10) {
     let questions = mockQuestions.filter(q => q.isActive);

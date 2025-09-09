@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Play, Settings, Copy, ExternalLink } from 'lucide-react';
+import { Plus, Users, Play, Copy, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,6 +120,7 @@ export default function QuizHostPage() {
 
   const handleStartSession = (sessionId: string) => {
     // TODO: Navigate to host control interface
+    console.log('Starting session:', sessionId);
     toast.info('Host control interface coming soon!');
   };
 

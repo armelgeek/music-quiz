@@ -131,7 +131,7 @@ export default function JoinQuizPage() {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
-            Don't have a session code?{' '}
+            Don&apos;t have a session code?{' '}
             <button 
               onClick={() => router.push('/quiz')}
               className="text-blue-500 hover:text-blue-600 underline"

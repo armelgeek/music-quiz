@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash, Music } from 'lucide-react';
+import { UploadButton } from '@/shared/lib/utils/uploadthing';
 
 interface QuizQuestion {
   id: string;
   type: 'multiple_choice' | 'true_false' | 'audio_recognition';
   question: string;
+  audioUrl?: string;
   options?: string[];
   correctAnswer: string;
   explanation?: string;
@@ -299,6 +301,45 @@ export default function AdminQuizPage() {
                 required
               />
             </div>
+
+            {newQuestion.type === 'audio_recognition' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Audio File</label>
+                {newQuestion.audioUrl ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <Music className="w-5 h-5 text-green-600" />
+                      <span className="text-sm text-green-800">Audio file uploaded</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewQuestion({...newQuestion, audioUrl: undefined})}
+                        className="ml-auto text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <audio controls className="w-full">
+                      <source src={newQuestion.audioUrl} type="audio/mpeg" />
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
+                    <UploadButton
+                      endpoint="audioUploader"
+                      onClientUploadComplete={(res) => {
+                        if (res && res[0]) {
+                          setNewQuestion({...newQuestion, audioUrl: res[0].url});
+                        }
+                      }}
+                      onUploadError={(error: Error) => {
+                        alert(`Upload failed: ${error.message}`);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {(newQuestion.type === 'multiple_choice' || newQuestion.type === 'audio_recognition') && (
               <div>

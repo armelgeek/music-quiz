@@ -10,6 +10,7 @@
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "tsx ./drizzle/migrate.ts",
     "db:studio": "npx drizzle-kit studio",
+    "db:seed": "tsx ./scripts/seed-quiz-data.ts",
     "stripe:listen": "bun run stripe listen --forward-to http://localhost:3000/api/stripe/webhook"
   },
   "dependencies": {

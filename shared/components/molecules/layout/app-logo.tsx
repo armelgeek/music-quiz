@@ -15,8 +15,8 @@ export function AppLogo() {
       aria-label="Homepage"
     >
       <span className="font-bold text-2xl tracking-tight truncate drop-shadow-sm select-none">
-        <span className="text-orange-600">{firstHalf.toUpperCase()}</span>
-        <span className="text-black">{secondHalf.toUpperCase()}</span>
+        <span className="text-blue-600">{firstHalf.toUpperCase()}</span>
+        <span className="text-purple-600">{secondHalf.toUpperCase()}</span>
       </span>
     </Link>
   );

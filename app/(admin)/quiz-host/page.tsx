@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Users, Play, Copy, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ interface HostSession {
 }
 
 export default function QuizHostPage() {
+  const router = useRouter();
   const [categories, setCategories] = useState<QuizCategory[]>([]);
   const [sessions, setSessions] = useState<HostSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,9 +121,14 @@ export default function QuizHostPage() {
   };
 
   const handleStartSession = (sessionId: string) => {
-    // TODO: Navigate to host control interface
-    console.log('Starting session:', sessionId);
-    toast.info('Host control interface coming soon!');
+    // Find the session data
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      // Navigate to host control interface with session data
+      router.push(`/quiz-host/session?sessionCode=${session.sessionCode}&sessionName=${encodeURIComponent(session.sessionName)}`);
+    } else {
+      toast.error('Session not found');
+    }
   };
 
   if (isLoading) {

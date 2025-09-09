@@ -13,6 +13,7 @@ function QuizPlayContent() {
   const router = useRouter();
   
   const sessionId = searchParams.get('session');
+  const dataParam = searchParams.get('data');
 
   useEffect(() => {
     if (!sessionId) {
@@ -20,16 +21,31 @@ function QuizPlayContent() {
       return;
     }
 
-    // For demo purposes since we don't have a session fetch endpoint yet,
-    // we'll use sample questions. In a real app, you'd fetch the session data
-    // and questions from the API based on the sessionId
-    setQuizData({
-      sessionId,
-      questions: sampleQuestions,
-      categoryName: 'Music Knowledge',
-    });
+    try {
+      if (dataParam) {
+        // Use the quiz data passed from the start quiz API
+        const parsedData = JSON.parse(dataParam);
+        setQuizData(parsedData);
+      } else {
+        // Fallback to sample questions if no data
+        setQuizData({
+          sessionId,
+          questions: sampleQuestions,
+          categoryName: 'Music Knowledge',
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing quiz data:', error);
+      // Fallback to sample questions
+      setQuizData({
+        sessionId,
+        questions: sampleQuestions,
+        categoryName: 'Music Knowledge',
+      });
+    }
+    
     setIsLoading(false);
-  }, [sessionId, router]);
+  }, [sessionId, dataParam, router]);
 
   // Sample questions for demo
   const sampleQuestions = [
@@ -159,48 +175,6 @@ function QuizPlayContent() {
       </div>
     );
   }
-
-  // For demo purposes, let's create some sample questions
-  const sampleQuestions = [
-    {
-      id: '1',
-      type: 'multiple_choice' as const,
-      question: 'Which artist released the album "Thriller" in 1982?',
-      options: ['Michael Jackson', 'Prince', 'Madonna', 'Whitney Houston'],
-      timeLimit: 30,
-      points: 10,
-    },
-    {
-      id: '2',
-      type: 'true_false' as const,
-      question: 'The Beatles were formed in Liverpool, England.',
-      timeLimit: 20,
-      points: 10,
-    },
-    {
-      id: '3',
-      type: 'multiple_choice' as const,
-      question: 'What year was "Bohemian Rhapsody" by Queen released?',
-      options: ['1975', '1976', '1977', '1978'],
-      timeLimit: 30,
-      points: 10,
-    },
-    {
-      id: '4',
-      type: 'multiple_choice' as const,
-      question: 'Which instrument is Jimi Hendrix most famous for playing?',
-      options: ['Piano', 'Guitar', 'Drums', 'Bass'],
-      timeLimit: 25,
-      points: 10,
-    },
-    {
-      id: '5',
-      type: 'true_false' as const,
-      question: 'Elvis Presley was born in Memphis, Tennessee.',
-      timeLimit: 20,
-      points: 10,
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">

@@ -50,13 +50,14 @@ export default function QuizPage() {
 
       if (response.ok) {
         const data = await response.json();
-        router.push(`/quiz/play?session=${data.sessionId}`);
+        // Redirect to play page with both session ID and the actual quiz data
+        const params = new URLSearchParams({
+          session: data.sessionId,
+          data: JSON.stringify(data)
+        });
+        router.push(`/quiz/play?${params.toString()}`);
       } else {
-        if (response.status === 401) {
-          router.push('/login?redirect=/quiz');
-        } else {
-          alert('Failed to start quiz. Please try again.');
-        }
+        alert('Failed to start quiz. Please try again.');
       }
     } catch (error) {
       console.error('Error starting quiz:', error);

@@ -1,7 +1,6 @@
-import { QuizService } from '../service';
-import { QuizSession } from '../../config/quiz.schema';
+import { MockQuizService } from '../mock-service';
 
-const quizService = new QuizService();
+const quizService = new MockQuizService();
 
 export interface StartQuizParams {
   userId: string;

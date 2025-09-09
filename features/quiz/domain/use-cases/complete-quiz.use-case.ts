@@ -1,7 +1,7 @@
-import { QuizService } from '../service';
+import { MockQuizService } from '../mock-service';
 import { QuizResult } from '../../config/quiz.types';
 
-const quizService = new QuizService();
+const quizService = new MockQuizService();
 
 export interface CompleteQuizParams {
   sessionId: string;

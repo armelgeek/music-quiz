@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { MockQuizService } from '@/features/quiz/domain/mock-service';
+import { NextResponse } from 'next/server';
+import { QuizService } from '@/features/quiz/domain/service';
 
-const quizService = new MockQuizService();
+const quizService = new QuizService();
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const categories = await quizService.getCategories();
     return NextResponse.json(categories);

@@ -1,6 +1,6 @@
-import { MockQuizService } from '../mock-service';
+import { QuizService } from '../service';
 
-const quizService = new MockQuizService();
+const quizService = new QuizService();
 
 export interface SubmitAnswerParams {
   sessionId: string;

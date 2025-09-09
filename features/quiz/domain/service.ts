@@ -20,6 +20,82 @@ export class QuizService {
       .orderBy(asc(quizCategories.name));
   }
 
+  // Get all questions for admin (not random/limited)
+  async getAllQuestions(categoryId?: string) {
+    let whereClause = eq(quizQuestions.isActive, true);
+    
+    if (categoryId) {
+      whereClause = and(
+        eq(quizQuestions.isActive, true),
+        eq(quizQuestions.categoryId, categoryId)
+      ) as any;
+    }
+
+    return await db
+      .select()
+      .from(quizQuestions)
+      .where(whereClause)
+      .orderBy(asc(quizQuestions.createdAt));
+  }
+
+  // Create a new question
+  async createQuestion(questionData: any) {
+    const [newQuestion] = await db
+      .insert(quizQuestions)
+      .values({
+        categoryId: questionData.categoryId,
+        type: questionData.type || 'multiple_choice',
+        difficulty: questionData.difficulty || 'medium',
+        question: questionData.question,
+        audioUrl: questionData.audioUrl,
+        options: questionData.options,
+        correctAnswer: questionData.correctAnswer,
+        explanation: questionData.explanation,
+        points: questionData.points || 10,
+        timeLimit: questionData.timeLimit || 30,
+        artistInfo: questionData.artistInfo,
+        isActive: questionData.isActive !== undefined ? questionData.isActive : true,
+      })
+      .returning();
+
+    return newQuestion;
+  }
+
+  // Update an existing question
+  async updateQuestion(questionId: string, updateData: any) {
+    const [updatedQuestion] = await db
+      .update(quizQuestions)
+      .set({
+        categoryId: updateData.categoryId,
+        type: updateData.type,
+        difficulty: updateData.difficulty,
+        question: updateData.question,
+        audioUrl: updateData.audioUrl,
+        options: updateData.options,
+        correctAnswer: updateData.correctAnswer,
+        explanation: updateData.explanation,
+        points: updateData.points,
+        timeLimit: updateData.timeLimit,
+        artistInfo: updateData.artistInfo,
+        isActive: updateData.isActive,
+        updatedAt: new Date(),
+      })
+      .where(eq(quizQuestions.id, questionId))
+      .returning();
+
+    return updatedQuestion;
+  }
+
+  // Delete a question
+  async deleteQuestion(questionId: string) {
+    const [deletedQuestion] = await db
+      .delete(quizQuestions)
+      .where(eq(quizQuestions.id, questionId))
+      .returning();
+
+    return !!deletedQuestion;
+  }
+
   // Get random questions for a quiz session
   async getQuizQuestions(categoryId?: string, limit: number = 10) {
     let whereClause = eq(quizQuestions.isActive, true);

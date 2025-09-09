@@ -198,6 +198,37 @@ export class MockQuizService {
     return newQuestion;
   }
 
+  // Update an existing question
+  async updateQuestion(questionId: string, updateData: Partial<MockQuestion>) {
+    const questionIndex = mockQuestions.findIndex(q => q.id === questionId);
+    
+    if (questionIndex === -1) {
+      return null;
+    }
+
+    const existingQuestion = mockQuestions[questionIndex];
+    const updatedQuestion: MockQuestion = {
+      ...existingQuestion,
+      ...updateData,
+      id: questionId, // Ensure ID doesn't change
+    };
+
+    mockQuestions[questionIndex] = updatedQuestion;
+    return updatedQuestion;
+  }
+
+  // Delete a question
+  async deleteQuestion(questionId: string) {
+    const questionIndex = mockQuestions.findIndex(q => q.id === questionId);
+    
+    if (questionIndex === -1) {
+      return false;
+    }
+
+    mockQuestions.splice(questionIndex, 1);
+    return true;
+  }
+
   // Get random questions for a quiz session
   async getQuizQuestions(categoryId?: string, limit: number = 10) {
     let questions = mockQuestions.filter(q => q.isActive);

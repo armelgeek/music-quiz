@@ -42,3 +42,66 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const questionId = searchParams.get('id');
+    
+    if (!questionId) {
+      return NextResponse.json(
+        { error: 'Question ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    const updateData = await request.json();
+    const updatedQuestion = await quizService.updateQuestion(questionId, updateData);
+    
+    if (!updatedQuestion) {
+      return NextResponse.json(
+        { error: 'Question not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json(updatedQuestion);
+  } catch (error) {
+    console.error('Error updating question:', error);
+    return NextResponse.json(
+      { error: 'Failed to update question' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const questionId = searchParams.get('id');
+    
+    if (!questionId) {
+      return NextResponse.json(
+        { error: 'Question ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    const deleted = await quizService.deleteQuestion(questionId);
+    
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'Question not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ message: 'Question deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting question:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete question' },
+      { status: 500 }
+    );
+  }
+}

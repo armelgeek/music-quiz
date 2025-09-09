@@ -5,6 +5,9 @@ export {
   quizSessions, 
   quizAnswers, 
   quizLeaderboard,
+  quizHostSessions,
+  quizHostParticipants,
+  quizHostAnswers,
   questionTypeEnum,
   difficultyEnum
 } from './quiz';

@@ -51,9 +51,9 @@ export default function JoinQuizPage() {
       // Successfully joined session
       toast.success(data.rejoined ? 'Rejoined session!' : 'Joined session successfully!');
       
-      // TODO: Navigate to hosted quiz participant interface
-      // For now, show success message
-      toast.info('Participant interface coming soon!');
+      // Navigate to participant interface with session data
+      const participantId = data.participantId || `participant_${Date.now()}`;
+      router.push(`/quiz/participate?sessionCode=${sessionCode}&participantName=${encodeURIComponent(participantName)}&participantId=${participantId}`);
       
     } catch (error) {
       console.error('Error joining session:', error);
@@ -131,7 +131,7 @@ export default function JoinQuizPage() {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
-            Don't have a session code?{' '}
+            Don&apos;t have a session code?{' '}
             <button 
               onClick={() => router.push('/quiz')}
               className="text-blue-500 hover:text-blue-600 underline"

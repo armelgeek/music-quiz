@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     
     // Allow anonymous users to play but track them
     const userId = session?.user?.id || 'anonymous';
+    console.log('User submitting answer:', userId);
 
     const body = await request.json();
     const validatedData = quizAnswerSchema.parse(body);

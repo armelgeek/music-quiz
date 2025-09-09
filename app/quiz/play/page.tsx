@@ -27,8 +27,8 @@ function QuizPlayContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  const sessionId = searchParams.get('session');
-  const dataParam = searchParams.get('data');
+  const sessionId = searchParams?.get('session');
+  const dataParam = searchParams?.get('data');
 
   useEffect(() => {
     if (!sessionId) {

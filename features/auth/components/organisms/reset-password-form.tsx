@@ -16,9 +16,9 @@ import { ResetPasswordPayload } from "../../config/reset-password.type";
 function ResetPasswordFormNoSuspense({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
 
   const searchParams = useSearchParams();
-  const invalid_token_error = searchParams.get("error");
-  const token = searchParams.get("token");
-  const { handleResetPassword, pending } = useResetPassword(token);
+  const invalid_token_error = searchParams?.get("error");
+  const token = searchParams?.get("token");
+  const { handleResetPassword, pending } = useResetPassword(token || null);
   const { form,handleSubmit } = useFormHandler<ResetPasswordPayload>({
     schema:resetPasswordSchema,
     initialValues: {

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       .from(quizHostParticipants)
       .where(eq(quizHostParticipants.hostSessionId, hostSession.id));
 
-    if (participantCount[0]?.count >= hostSession.maxParticipants) {
+    if (Number(participantCount[0]?.count) >= hostSession.maxParticipants) {
       return NextResponse.json(
         { error: 'Session is full' },
         { status: 400 }

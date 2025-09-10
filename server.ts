@@ -1,6 +1,9 @@
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import next from 'next';
+import { db } from './drizzle/db';
+import { quizHostSessions, quizHostParticipants } from './drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -36,7 +39,7 @@ app.prepare().then(() => {
     });
 });
 
-function setupSocketHandlers(io: Server) {
+async function setupSocketHandlers(io: Server) {
   // Host session namespace for real-time quiz hosting
   const hostNamespace = io.of('/host-sessions');
 
@@ -44,9 +47,37 @@ function setupSocketHandlers(io: Server) {
     console.log('Host session client connected:', socket.id);
 
     // Join a specific session room
-    socket.on('join-session', (sessionCode: string) => {
+    socket.on('join-session', async (sessionCode: string) => {
       socket.join(sessionCode);
       console.log(`Client ${socket.id} joined session ${sessionCode}`);
+      
+      // Send current participants to the newly joined client
+      try {
+        const [session] = await db
+          .select()
+          .from(quizHostSessions)
+          .where(and(
+            eq(quizHostSessions.sessionCode, sessionCode),
+            eq(quizHostSessions.isActive, true)
+          ));
+
+        if (session) {
+          const participants = await db
+            .select()
+            .from(quizHostParticipants)
+            .where(eq(quizHostParticipants.hostSessionId, session.id));
+
+          socket.emit('session-participants', participants.map(p => ({
+            participantId: p.id,
+            participantName: p.participantName,
+            score: p.currentScore,
+            isConnected: p.isConnected,
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching participants for session:', error);
+      }
+      
       socket.emit('joined-session', sessionCode);
     });
 
@@ -87,14 +118,28 @@ function setupSocketHandlers(io: Server) {
     });
 
     // Participant events
-    socket.on('participant-join', (data) => {
+    socket.on('participant-join', async (data) => {
       const { sessionCode, participantName, participantId } = data;
       socket.join(sessionCode);
-      hostNamespace.to(sessionCode).emit('participant-joined', {
-        participantName,
-        participantId,
-        timestamp: Date.now()
-      });
+      
+      try {
+        // Update participant connection status in database
+        if (participantId) {
+          await db
+            .update(quizHostParticipants)
+            .set({ isConnected: true })
+            .where(eq(quizHostParticipants.id, participantId));
+        }
+        
+        // Broadcast to all clients in the session including host
+        hostNamespace.to(sessionCode).emit('participant-joined', {
+          participantName,
+          participantId,
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Error updating participant connection:', error);
+      }
     });
 
     socket.on('participant-answer', (data) => {
@@ -108,8 +153,11 @@ function setupSocketHandlers(io: Server) {
       });
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       console.log('Host session client disconnected:', socket.id);
+      
+      // Note: In a production app, you might want to track which participant
+      // disconnected and update their connection status in the database
     });
   });
 }

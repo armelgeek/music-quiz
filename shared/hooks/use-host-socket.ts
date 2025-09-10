@@ -29,6 +29,40 @@ export function useHostSocket(sessionCode?: string) {
       console.log('Disconnected from host session socket');
     });
 
+    // Listen for participant events
+    socketInstance.on('participant-joined', (data) => {
+      console.log('Participant joined:', data);
+      setParticipants(prev => {
+        const existing = prev.find(p => p.participantId === data.participantId);
+        if (existing) {
+          return prev; // Already exists
+        }
+        return [...prev, {
+          participantId: data.participantId,
+          participantName: data.participantName,
+          score: 0,
+          isConnected: true,
+        }];
+      });
+    });
+
+    socketInstance.on('session-participants', (participantList) => {
+      console.log('Received session participants:', participantList);
+      setParticipants(participantList);
+    });
+
+    socketInstance.on('participant-left', (data) => {
+      console.log('Participant left:', data);
+      setParticipants(prev => 
+        prev.filter(p => p.participantId !== data.participantId)
+      );
+    });
+
+    socketInstance.on('participant-answered', (data) => {
+      console.log('Participant answered:', data);
+      // Update participant state if needed
+    });
+
     // Join session room if sessionCode is provided
     if (sessionCode) {
       socketInstance.emit('join-session', sessionCode);

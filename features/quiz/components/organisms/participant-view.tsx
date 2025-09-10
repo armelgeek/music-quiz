@@ -63,7 +63,13 @@ export default function ParticipantView({
     const updateTimer = () => {
       const elapsed = (Date.now() - currentQuestion.startTime) / 1000;
       const remaining = Math.max(0, currentQuestion.timeLimit - elapsed);
-      setTimeRemaining(Math.ceil(remaining));
+      const timeLeft = Math.ceil(remaining);
+      setTimeRemaining(timeLeft);
+      
+      // Auto-submit when time runs out
+      if (timeLeft <= 0 && !hasAnswered) {
+        handleAnswerSubmit(''); // Submit empty answer
+      }
     };
 
     // Update immediately

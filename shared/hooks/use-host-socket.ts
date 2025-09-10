@@ -56,6 +56,9 @@ export function useHostSocket(sessionCode?: string) {
       setParticipants(prev => 
         prev.filter(p => p.participantId !== data.participantId)
       );
+      
+      // Show notification that a participant left (optional, could use toast)
+      console.log(`${data.participantName} left the session`);
     });
 
     socketInstance.on('participant-answered', (data) => {

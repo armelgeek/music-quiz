@@ -51,9 +51,23 @@ export default function QuizHostPage() {
         setCategories(categoriesData);
       }
 
-      // TODO: Fetch existing host sessions
-      // For now, we'll show empty state
-      setSessions([]);
+      // Fetch existing host sessions
+      const sessionsResponse = await fetch('/api/v1/quiz/host/sessions');
+      if (sessionsResponse.ok) {
+        const sessionsData = await sessionsResponse.json();
+        setSessions(sessionsData.map((session: any) => ({
+          id: session.id,
+          sessionName: session.sessionName,
+          sessionCode: session.sessionCode,
+          maxParticipants: session.maxParticipants,
+          createdAt: session.createdAt,
+          isActive: session.isActive,
+          participantCount: session.participantCount || 0,
+        })));
+      } else {
+        console.error('Failed to fetch sessions:', sessionsResponse.status);
+        setSessions([]);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');

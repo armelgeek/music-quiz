@@ -5,10 +5,10 @@ import { eq, and } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionCode: string } }
+  { params }: { params: Promise<{ sessionCode: string }> }
 ) {
   try {
-    const { sessionCode } = params;
+    const { sessionCode } = await params;
 
     if (!sessionCode) {
       return NextResponse.json(

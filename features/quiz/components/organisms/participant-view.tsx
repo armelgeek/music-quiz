@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParticipantSocket } from '@/shared/hooks/use-host-socket';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Trophy, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, Trophy, CheckCircle, XCircle, Crown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ParticipantViewProps {
@@ -38,6 +38,8 @@ export default function ParticipantView({
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answerTime, setAnswerTime] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [countdownTime, setCountdownTime] = useState(0);
 
   // Handle leaving session with proper notification
   const handleLeaveSession = () => {
@@ -88,12 +90,30 @@ export default function ParticipantView({
     }
   }, [isConnected, sessionCode, participantName, participantId, joinAsParticipant]);
 
+  // Listen for countdown events
+  React.useEffect(() => {
+    if (!socket) return;
+
+    const handleCountdown = (data: { countdown: number; message: string }) => {
+      setShowCountdown(true);
+      setCountdownTime(data.countdown);
+    };
+
+    socket.on('transition-countdown', handleCountdown);
+
+    return () => {
+      socket.off('transition-countdown', handleCountdown);
+    };
+  }, [socket]);
+
   // Reset answer state when new question arrives
   React.useEffect(() => {
     if (currentQuestion) {
       setSelectedAnswer('');
       setHasAnswered(false);
       setAnswerTime(null);
+      setShowCountdown(false);
+      setCountdownTime(0);
     }
   }, [currentQuestion]);
 
@@ -184,6 +204,28 @@ export default function ParticipantView({
               </div>
               <h3 className="text-lg font-semibold mb-2">Waiting for host...</h3>
               <p className="text-gray-500">The session will start soon!</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Transition Countdown */}
+      {showCountdown && countdownTime > 0 && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                {countdownTime}
+              </div>
+              <p className="text-lg text-gray-700 mb-4">
+                {sessionStatus === 'ended' ? 'Quiz completed!' : 'Next question starting soon...'}
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-blue-500 h-3 rounded-full transition-all duration-1000"
+                  style={{ width: `${((5 - countdownTime) / 5) * 100}%` }}
+                ></div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -295,10 +337,26 @@ export default function ParticipantView({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
-              Leaderboard
+              {sessionStatus === 'ended' ? 'Final Results' : 'Leaderboard'}
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Winner announcement for final results */}
+            {sessionStatus === 'ended' && leaderboard.length > 0 && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-200">
+                <div className="text-center">
+                  <Crown className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                  <h3 className="text-xl font-bold text-yellow-700 mb-1">🎉 Winner! 🎉</h3>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {leaderboard[0].participantName}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {leaderboard[0].score} points
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               {leaderboard.slice(0, 10).map((participant, index) => (
                 <div 
@@ -307,25 +365,38 @@ export default function ParticipantView({
                     participant.participantId === participantId 
                       ? 'bg-blue-50 border-2 border-blue-200' 
                       : 'bg-gray-50'
+                  } ${
+                    sessionStatus === 'ended' && index === 0 
+                      ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300' 
+                      : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold relative
                       ${index === 0 ? 'bg-yellow-500 text-white' : 
                         index === 1 ? 'bg-gray-400 text-white' :
                         index === 2 ? 'bg-orange-600 text-white' :
                         'bg-gray-200 text-gray-600'}
                     `}>
+                      {index === 0 && sessionStatus === 'ended' && (
+                        <Crown className="h-4 w-4 absolute -top-1 -right-1 text-yellow-600" />
+                      )}
                       {index + 1}
                     </div>
                     <span className={`
                       ${participant.participantId === participantId ? 'font-bold' : ''}
+                      ${sessionStatus === 'ended' && index === 0 ? 'font-bold text-yellow-700' : ''}
                     `}>
                       {participant.participantName}
+                      {participant.participantId === participantId && ' (You)'}
                     </span>
                   </div>
-                  <Badge variant="outline">{participant.score} pts</Badge>
+                  <Badge variant="outline" className={
+                    sessionStatus === 'ended' && index === 0 ? 'bg-yellow-100 text-yellow-700 border-yellow-300' : ''
+                  }>
+                    {participant.score} pts
+                  </Badge>
                 </div>
               ))}
             </div>

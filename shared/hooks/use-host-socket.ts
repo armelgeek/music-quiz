@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { HostSessionEvents } from '@/shared/lib/socket-server';
 
 // Custom hook for host session socket connection

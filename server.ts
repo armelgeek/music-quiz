@@ -2,8 +2,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import next from 'next';
 import { db } from './drizzle/db';
-import { quizHostSessions, quizHostParticipants } from './drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { quizHostSessions, quizHostParticipants, quizHostAnswers, quizQuestions } from './drizzle/schema';
+import { eq, and, desc } from 'drizzle-orm';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -115,6 +115,20 @@ async function setupSocketHandlers(io: Server) {
     socket.on('host-show-leaderboard', (data) => {
       const { sessionCode, leaderboard } = data;
       hostNamespace.to(sessionCode).emit('leaderboard-updated', leaderboard);
+      
+      // Start countdown for next question
+      let countdown = 5;
+      const countdownInterval = setInterval(() => {
+        hostNamespace.to(sessionCode).emit('transition-countdown', {
+          countdown,
+          message: countdown > 0 ? 'Next question starting soon...' : 'Starting next question!'
+        });
+        
+        countdown--;
+        if (countdown < 0) {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
     });
 
     // Participant events
@@ -142,15 +156,96 @@ async function setupSocketHandlers(io: Server) {
       }
     });
 
-    socket.on('participant-answer', (data) => {
+    socket.on('participant-answer', async (data) => {
       const { sessionCode, participantId, answer, questionId } = data;
-      // Broadcast to host only (not all participants)
-      socket.to(sessionCode).emit('participant-answered', {
-        participantId,
-        answer,
-        questionId,
-        timestamp: Date.now()
-      });
+      
+      try {
+        // Get the session and question details
+        const [session] = await db
+          .select()
+          .from(quizHostSessions)
+          .where(and(
+            eq(quizHostSessions.sessionCode, sessionCode),
+            eq(quizHostSessions.isActive, true)
+          ));
+
+        if (!session) {
+          console.error('Session not found:', sessionCode);
+          return;
+        }
+
+        // Get the question details to check correct answer and calculate points
+        const [question] = await db
+          .select()
+          .from(quizQuestions)
+          .where(eq(quizQuestions.id, questionId));
+
+        if (!question) {
+          console.error('Question not found:', questionId);
+          return;
+        }
+
+        // Calculate if answer is correct and points earned
+        const isCorrect = answer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+        const pointsEarned = isCorrect ? question.points : 0;
+
+        // Save the answer to database
+        await db.insert(quizHostAnswers).values({
+          hostSessionId: session.id,
+          participantId,
+          questionId,
+          userAnswer: answer,
+          isCorrect,
+          pointsEarned,
+          timeSpent: 0, // This could be enhanced to track actual time spent
+        });
+
+        // Update participant's current score
+        if (isCorrect && pointsEarned > 0) {
+          await db
+            .update(quizHostParticipants)
+            .set({ 
+              currentScore: (await db
+                .select({ score: quizHostParticipants.currentScore })
+                .from(quizHostParticipants)
+                .where(eq(quizHostParticipants.id, participantId))
+                .then(result => result[0]?.score || 0)
+              ) + pointsEarned
+            })
+            .where(eq(quizHostParticipants.id, participantId));
+        }
+
+        // Get updated leaderboard
+        const participants = await db
+          .select()
+          .from(quizHostParticipants)
+          .where(eq(quizHostParticipants.hostSessionId, session.id))
+          .orderBy(desc(quizHostParticipants.currentScore), quizHostParticipants.joinedAt);
+
+        const leaderboard = participants.map((p, index) => ({
+          rank: index + 1,
+          participantId: p.id,
+          participantName: p.participantName,
+          score: p.currentScore
+        }));
+
+        // Broadcast updated leaderboard to all participants
+        hostNamespace.to(sessionCode).emit('leaderboard-updated', leaderboard);
+
+        // Broadcast to host that participant answered
+        socket.to(sessionCode).emit('participant-answered', {
+          participantId,
+          answer,
+          questionId,
+          isCorrect,
+          pointsEarned,
+          timestamp: Date.now()
+        });
+
+        console.log(`Participant ${participantId} answered question ${questionId}: ${isCorrect ? 'correct' : 'incorrect'} (${pointsEarned} points)`);
+      } catch (error) {
+        console.error('Error processing participant answer:', error);
+      }
     });
 
     socket.on('participant-leave', async (data) => {

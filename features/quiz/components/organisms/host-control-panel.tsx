@@ -33,6 +33,10 @@ export default function HostControlPanel({
   const [sessionStatus, setSessionStatus] = useState<'waiting' | 'active' | 'ended'>('waiting');
   const [timeLeft, setTimeLeft] = useState(0);
   const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showingResults, setShowingResults] = useState(false);
+  const [showingLeaderboard, setShowingLeaderboard] = useState(false);
+  const [autoProgressCountdown, setAutoProgressCountdown] = useState(0);
+  const [autoProgressTimer, setAutoProgressTimer] = useState<NodeJS.Timeout | null>(null);
 
   const currentQuestion = questions[currentQuestionIndex];
 
@@ -67,11 +71,14 @@ export default function HostControlPanel({
       });
       
       setTimeLeft(question.timeLimit || 30);
+      setShowingResults(false);
+      setShowingLeaderboard(false);
+      setAutoProgressCountdown(0);
       startTimer();
     }
   };
 
-  // Handle show results
+  // Handle show results with auto-progression
   const handleShowResults = () => {
     if (currentQuestion) {
       showResults({
@@ -87,9 +94,50 @@ export default function HostControlPanel({
       clearInterval(timer);
       setTimer(null);
     }
+
+    setShowingResults(true);
+    setShowingLeaderboard(false);
+
+    // Start auto-progression: show leaderboard after 3 seconds, then next question after 5 seconds total
+    startAutoProgression();
   };
 
-  // Handle show leaderboard  
+  // Auto-progression logic
+  const startAutoProgression = () => {
+    if (autoProgressTimer) {
+      clearInterval(autoProgressTimer);
+    }
+
+    // Show leaderboard after 3 seconds
+    setTimeout(() => {
+      handleShowLeaderboard();
+      setShowingResults(false);
+      setShowingLeaderboard(true);
+    }, 3000);
+
+    // Start 5-second countdown for next question
+    setAutoProgressCountdown(5);
+    const countdownTimer = setInterval(() => {
+      setAutoProgressCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownTimer);
+          // Move to next question or end session
+          if (currentQuestionIndex < questions.length - 1) {
+            handleNextQuestion();
+          } else {
+            handleEndSession();
+          }
+          setShowingLeaderboard(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    setAutoProgressTimer(countdownTimer);
+  };
+
+  // Handle show leaderboard with winner determination
   const handleShowLeaderboard = () => {
     // Calculate scores based on participants
     const leaderboardData = participants
@@ -101,9 +149,12 @@ export default function HostControlPanel({
         score: p.score
       }));
 
+    // Determine if this is the final leaderboard
+    const isFinalLeaderboard = currentQuestionIndex >= questions.length - 1;
+    
     showLeaderboard({
       sessionCode,
-      leaderboard: leaderboardData
+      leaderboard: leaderboardData,
     });
   };
 
@@ -116,6 +167,14 @@ export default function HostControlPanel({
       clearInterval(timer);
       setTimer(null);
     }
+    
+    if (autoProgressTimer) {
+      clearInterval(autoProgressTimer);
+      setAutoProgressTimer(null);
+    }
+
+    // Show final leaderboard when session ends
+    handleShowLeaderboard();
   };
 
   // Timer functions
@@ -139,8 +198,9 @@ export default function HostControlPanel({
   useEffect(() => {
     return () => {
       if (timer) clearInterval(timer);
+      if (autoProgressTimer) clearInterval(autoProgressTimer);
     };
-  }, [timer]);
+  }, [timer, autoProgressTimer]);
 
   if (!isConnected) {
     return (
@@ -230,37 +290,60 @@ export default function HostControlPanel({
           <CardTitle>Session Controls</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 flex-wrap">
-            {sessionStatus === 'waiting' && (
-              <Button onClick={handleStartSession} className="flex items-center gap-2">
-                <Play className="h-4 w-4" />
-                Start Session
-              </Button>
+          <div className="space-y-4">
+            {/* Auto-progression status */}
+            {(showingResults || showingLeaderboard) && autoProgressCountdown > 0 && (
+              <div className="p-4 bg-blue-50 rounded-lg text-center">
+                <div className="text-lg font-semibold text-blue-700">
+                  {showingResults ? 'Results shown! ' : 'Leaderboard updated! '}
+                  {currentQuestionIndex < questions.length - 1 
+                    ? `Next question in ${autoProgressCountdown}s...` 
+                    : `Session ending in ${autoProgressCountdown}s...`
+                  }
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${((5 - autoProgressCountdown) / 5) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             )}
-            
-            {sessionStatus === 'active' && (
-              <>
-                <Button onClick={handleShowResults} variant="outline" className="flex items-center gap-2">
-                  Show Results
+
+            <div className="flex gap-2 flex-wrap">
+              {sessionStatus === 'waiting' && (
+                <Button onClick={handleStartSession} className="flex items-center gap-2">
+                  <Play className="h-4 w-4" />
+                  Start Session
                 </Button>
-                
-                <Button onClick={handleShowLeaderboard} variant="outline" className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4" />
-                  Show Leaderboard
-                </Button>
-                
-                {currentQuestionIndex < questions.length - 1 && (
-                  <Button onClick={handleNextQuestion} className="flex items-center gap-2">
-                    Next Question
+              )}
+              
+              {sessionStatus === 'active' && (
+                <>
+                  {!showingResults && !showingLeaderboard && (
+                    <Button onClick={handleShowResults} variant="outline" className="flex items-center gap-2">
+                      Show Results
+                    </Button>
+                  )}
+                  
+                  <Button onClick={handleShowLeaderboard} variant="outline" className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    Show Leaderboard
                   </Button>
-                )}
-                
-                <Button onClick={handleEndSession} variant="destructive" className="flex items-center gap-2">
-                  <StopCircle className="h-4 w-4" />
-                  End Session
-                </Button>
-              </>
-            )}
+                  
+                  {currentQuestionIndex < questions.length - 1 && !autoProgressCountdown && (
+                    <Button onClick={handleNextQuestion} className="flex items-center gap-2">
+                      Next Question
+                    </Button>
+                  )}
+                  
+                  <Button onClick={handleEndSession} variant="destructive" className="flex items-center gap-2">
+                    <StopCircle className="h-4 w-4" />
+                    End Session
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

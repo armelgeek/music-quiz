@@ -6,17 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Trophy, CheckCircle, XCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface ParticipantViewProps {
   sessionCode: string;
   participantName: string;
   participantId: string;
+  onLeaveSession?: () => void;
 }
 
 export default function ParticipantView({ 
   sessionCode, 
   participantName, 
-  participantId 
+  participantId,
+  onLeaveSession 
 }: ParticipantViewProps) {
   const {
     socket,
@@ -27,11 +30,50 @@ export default function ParticipantView({
     results,
     joinAsParticipant,
     submitAnswer,
+    leaveSession,
   } = useParticipantSocket(sessionCode);
 
+  const router = useRouter();
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answerTime, setAnswerTime] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+
+  // Handle leaving session with proper notification
+  const handleLeaveSession = () => {
+    // Emit leave event to notify server and other participants
+    leaveSession(participantName, participantId);
+    
+    // Call the parent's leave handler if provided
+    if (onLeaveSession) {
+      onLeaveSession();
+    } else {
+      // Fallback to direct navigation
+      router.push('/quiz/join');
+    }
+  };
+
+  // Enhanced countdown timer that updates every second
+  useEffect(() => {
+    if (!currentQuestion?.startTime || !currentQuestion?.timeLimit || hasAnswered) {
+      setTimeRemaining(0);
+      return;
+    }
+
+    const updateTimer = () => {
+      const elapsed = (Date.now() - currentQuestion.startTime) / 1000;
+      const remaining = Math.max(0, currentQuestion.timeLimit - elapsed);
+      setTimeRemaining(Math.ceil(remaining));
+    };
+
+    // Update immediately
+    updateTimer();
+
+    // Update every second
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentQuestion, hasAnswered]);
 
   // Join session when component mounts
   React.useEffect(() => {
@@ -60,11 +102,7 @@ export default function ParticipantView({
   };
 
   const getTimeRemaining = () => {
-    if (!currentQuestion?.startTime || !currentQuestion?.timeLimit) return 0;
-    
-    const elapsed = (Date.now() - currentQuestion.startTime) / 1000;
-    const remaining = Math.max(0, currentQuestion.timeLimit - elapsed);
-    return Math.ceil(remaining);
+    return timeRemaining;
   };
 
   const myPosition = leaderboard.findIndex(p => p.participantId === participantId) + 1;
@@ -106,14 +144,24 @@ export default function ParticipantView({
                 {myPosition ? `#${myPosition}` : 'Not ranked'} • {myScore} points
               </p>
             </div>
-            {sessionStatus === 'active' && (
-              <div className="text-right">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Clock className="h-4 w-4" />
-                  <span>{getTimeRemaining()}s remaining</span>
+            <div className="flex items-center gap-4">
+              {sessionStatus === 'active' && (
+                <div className="text-right">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Clock className="h-4 w-4" />
+                    <span>{getTimeRemaining()}s remaining</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleLeaveSession}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                Leave
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -143,6 +191,26 @@ export default function ParticipantView({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* Countdown Timer */}
+              {timeRemaining > 0 && currentQuestion?.timeLimit && (
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className={`text-3xl font-bold mb-2 ${timeRemaining <= 10 ? 'text-red-600 animate-pulse' : 'text-blue-600'}`}>
+                    {timeRemaining}s
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-1000 ${
+                        timeRemaining <= 10 ? 'bg-red-500' : 'bg-blue-500'
+                      }`}
+                      style={{ 
+                        width: `${(timeRemaining / (currentQuestion.timeLimit || 30)) * 100}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">Time remaining to answer</p>
+                </div>
+              )}
+              
               <p className="text-lg font-medium">{currentQuestion.question.question}</p>
               
               {currentQuestion.question.options && (

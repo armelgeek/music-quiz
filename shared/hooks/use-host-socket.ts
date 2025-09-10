@@ -189,6 +189,14 @@ export function useParticipantSocket(sessionCode?: string) {
     });
   };
 
+  const leaveSession = (participantName: string, participantId: string) => {
+    socket?.emit('participant-leave', {
+      sessionCode,
+      participantId,
+      participantName
+    });
+  };
+
   return {
     socket,
     isConnected,
@@ -198,6 +206,7 @@ export function useParticipantSocket(sessionCode?: string) {
     results,
     joinAsParticipant,
     submitAnswer,
+    leaveSession,
   };
 }
 

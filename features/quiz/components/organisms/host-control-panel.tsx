@@ -5,7 +5,7 @@ import { useHostSocket } from '@/shared/hooks/use-host-socket';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, StopCircle, Users, Trophy, Clock } from 'lucide-react';
+import { Play, Pause, StopCircle, Users, Trophy, Clock, Check, X, MessageSquare } from 'lucide-react';
 
 interface HostControlPanelProps {
   sessionCode: string;
@@ -27,6 +27,8 @@ export default function HostControlPanel({
     nextQuestion,
     showResults,
     showLeaderboard,
+    clearParticipantAnswers,
+    updateAnswerCorrectness,
   } = useHostSocket(sessionCode);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -40,6 +42,9 @@ export default function HostControlPanel({
   const handleStartSession = () => {
     startSession({ sessionCode, sessionName });
     setSessionStatus('active');
+    
+    // Clear any previous answer states
+    clearParticipantAnswers();
     
     // Start with first question
     if (currentQuestion) {
@@ -60,6 +65,9 @@ export default function HostControlPanel({
       setCurrentQuestionIndex(nextQuestionIndex);
       const question = questions[nextQuestionIndex];
       
+      // Clear participant answers for the new question
+      clearParticipantAnswers();
+      
       nextQuestion({
         sessionCode,
         question,
@@ -74,6 +82,9 @@ export default function HostControlPanel({
   // Handle show results
   const handleShowResults = () => {
     if (currentQuestion) {
+      // Update participant answer correctness
+      updateAnswerCorrectness(currentQuestion.correctAnswer);
+      
       showResults({
         sessionCode,
         results: {
@@ -278,17 +289,47 @@ export default function HostControlPanel({
               participants.map((participant) => (
                 <div 
                   key={participant.participantId}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div 
                       className={`w-2 h-2 rounded-full ${
                         participant.isConnected ? 'bg-green-500' : 'bg-gray-400'
                       }`}
                     ></div>
-                    <span>{participant.participantName}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{participant.participantName}</span>
+                      {participant.hasAnswered && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <MessageSquare className="h-3 w-3 text-blue-500" />
+                          <span className="text-sm text-gray-600">
+                            Answer: <span className="font-medium">{participant.currentAnswer}</span>
+                          </span>
+                          {participant.isCorrect !== undefined && (
+                            participant.isCorrect ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-500" />
+                            )
+                          )}
+                        </div>
+                      )}
+                      {!participant.hasAnswered && sessionStatus === 'active' && (
+                        <span className="text-xs text-gray-400 mt-1">Waiting for answer...</span>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant="outline">{participant.score} pts</Badge>
+                  <div className="flex items-center gap-2">
+                    {participant.hasAnswered && (
+                      <Badge 
+                        variant={participant.isCorrect === true ? 'default' : participant.isCorrect === false ? 'destructive' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {participant.hasAnswered ? 'Answered' : 'Waiting'}
+                      </Badge>
+                    )}
+                    <Badge variant="outline">{participant.score} pts</Badge>
+                  </div>
                 </div>
               ))
             )}

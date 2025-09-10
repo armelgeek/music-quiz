@@ -153,11 +153,39 @@ async function setupSocketHandlers(io: Server) {
       });
     });
 
+    socket.on('participant-leave', async (data) => {
+      const { sessionCode, participantId, participantName } = data;
+      socket.leave(sessionCode);
+      
+      try {
+        // Update participant connection status in database
+        if (participantId) {
+          await db
+            .update(quizHostParticipants)
+            .set({ isConnected: false })
+            .where(eq(quizHostParticipants.id, participantId));
+        }
+        
+        // Notify all clients in the session including host
+        hostNamespace.to(sessionCode).emit('participant-left', {
+          participantId,
+          participantName,
+          timestamp: Date.now()
+        });
+        
+        console.log(`Participant ${participantName} left session ${sessionCode}`);
+      } catch (error) {
+        console.error('Error updating participant leave status:', error);
+      }
+    });
+
     socket.on('disconnect', async () => {
       console.log('Host session client disconnected:', socket.id);
       
       // Note: In a production app, you might want to track which participant
       // disconnected and update their connection status in the database
+      // This could be enhanced to automatically mark participants as disconnected
+      // when they close their browser/app without explicitly leaving
     });
   });
 }

@@ -31,6 +31,12 @@ export default function ParticipantSessionPage() {
     }
   }, [searchParams, router]);
 
+  const handleLeaveSession = () => {
+    // The actual leave notification will be handled by the ParticipantView component
+    // when it receives the leave action through its internal state management
+    router.push('/quiz/join');
+  };
+
   if (!sessionData) {
     return (
       <div className="container mx-auto p-6">
@@ -51,7 +57,7 @@ export default function ParticipantSessionPage() {
       <div className="mb-6">
         <Button 
           variant="outline" 
-          onClick={() => router.push('/quiz/join')}
+          onClick={handleLeaveSession}
           className="flex items-center gap-2 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -63,6 +69,7 @@ export default function ParticipantSessionPage() {
         sessionCode={sessionData.sessionCode}
         participantName={sessionData.participantName}
         participantId={sessionData.participantId}
+        onLeaveSession={handleLeaveSession}
       />
     </div>
   );

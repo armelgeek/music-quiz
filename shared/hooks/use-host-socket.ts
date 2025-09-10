@@ -2,16 +2,22 @@ import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { HostSessionEvents } from '@/shared/lib/socket-server';
 
+// Interface for participant with answer tracking
+interface ParticipantWithAnswer {
+  participantId: string;
+  participantName: string;
+  score: number;
+  isConnected: boolean;
+  currentAnswer?: string;
+  hasAnswered?: boolean;
+  isCorrect?: boolean;
+}
+
 // Custom hook for host session socket connection
 export function useHostSocket(sessionCode?: string) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [participants, setParticipants] = useState<Array<{
-    participantId: string;
-    participantName: string;
-    score: number;
-    isConnected: boolean;
-  }>>([]);
+  const [participants, setParticipants] = useState<Array<ParticipantWithAnswer>>([]);
 
   useEffect(() => {
     // Initialize socket connection
@@ -42,6 +48,9 @@ export function useHostSocket(sessionCode?: string) {
           participantName: data.participantName,
           score: 0,
           isConnected: true,
+          currentAnswer: undefined,
+          hasAnswered: false,
+          isCorrect: undefined,
         }];
       });
     });
@@ -63,7 +72,19 @@ export function useHostSocket(sessionCode?: string) {
 
     socketInstance.on('participant-answered', (data) => {
       console.log('Participant answered:', data);
-      // Update participant state if needed
+      // Update participant state with their answer
+      setParticipants(prev => 
+        prev.map(participant => 
+          participant.participantId === data.participantId
+            ? {
+                ...participant,
+                currentAnswer: data.answer,
+                hasAnswered: true,
+                // isCorrect will be updated when results are shown
+              }
+            : participant
+        )
+      );
     });
 
     // Join session room if sessionCode is provided
@@ -99,6 +120,30 @@ export function useHostSocket(sessionCode?: string) {
     socket?.emit('host-show-leaderboard', data);
   };
 
+  // Clear participant answers for new question
+  const clearParticipantAnswers = () => {
+    setParticipants(prev => 
+      prev.map(participant => ({
+        ...participant,
+        currentAnswer: undefined,
+        hasAnswered: false,
+        isCorrect: undefined,
+      }))
+    );
+  };
+
+  // Update participant answer correctness when results are shown
+  const updateAnswerCorrectness = (correctAnswer: string) => {
+    setParticipants(prev => 
+      prev.map(participant => ({
+        ...participant,
+        isCorrect: participant.hasAnswered 
+          ? participant.currentAnswer === correctAnswer
+          : undefined,
+      }))
+    );
+  };
+
   return {
     socket,
     isConnected,
@@ -108,6 +153,8 @@ export function useHostSocket(sessionCode?: string) {
     nextQuestion,
     showResults,
     showLeaderboard,
+    clearParticipantAnswers,
+    updateAnswerCorrectness,
   };
 }
 
